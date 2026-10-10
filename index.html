@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffb74d">
+<title>可愛零用錢</title>
+<style>
+  :root {
+    --bg: #fff8ee; --card: #fff; --ink: #3b2f2a; --muted: #9a8a80;
+    --in: #2e9d5b; --out: #e0533d; --accent: #ffb74d; --line: #f0e4d6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    font-size: 18px; -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 16px 16px 40px; }
+  .hidden { display: none !important; }
+  button { font: inherit; border: 0; border-radius: 14px; cursor: pointer; }
+  input { font: inherit; width: 100%; padding: 14px; border: 2px solid var(--line); border-radius: 14px; background: #fff; }
+  input:focus { outline: none; border-color: var(--accent); }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  header h1 { font-size: 22px; margin: 0; }
+  .who-chip { background: #fff; border: 2px solid var(--line); padding: 6px 12px; font-size: 15px; }
+  .link-btn { background: none; color: var(--muted); font-size: 15px; padding: 6px 8px; }
+
+  .balance { background: var(--card); border-radius: 24px; padding: 22px; margin: 16px 0; text-align: center; box-shadow: 0 4px 0 var(--line); }
+  .balance .label { color: var(--muted); font-size: 16px; }
+  .balance .amount { font-size: 56px; font-weight: 800; letter-spacing: 1px; }
+  .balance .amount.neg { color: var(--out); }
+
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .actions button { padding: 18px; font-size: 22px; font-weight: 700; color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,.12); }
+  .btn-in { background: var(--in); }
+  .btn-out { background: var(--out); }
+
+  h2 { font-size: 17px; color: var(--muted); margin: 24px 4px 8px; font-weight: 600; }
+  .list { background: var(--card); border-radius: 20px; overflow: hidden; }
+  .item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .item:last-child { border-bottom: 0; }
+  .item .note { font-weight: 600; word-break: break-word; }
+  .item .money { font-weight: 800; font-size: 20px; text-align: right; }
+  .item .money.in { color: var(--in); }
+  .item .money.out { color: var(--out); }
+  .item .meta { color: var(--muted); font-size: 14px; }
+  .item .after { color: var(--muted); font-size: 14px; text-align: right; }
+  .item.reversed .note, .item.reversed .money { text-decoration: line-through; opacity: .5; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--line); color: var(--muted); margin-left: 6px; vertical-align: middle; }
+  .fix-btn { background: none; color: var(--muted); font-size: 13px; padding: 0; text-decoration: underline; }
+  .empty { padding: 28px; text-align: center; color: var(--muted); }
+
+  .setup { background: var(--card); border-radius: 24px; padding: 24px; margin-top: 40px; text-align: center; }
+  .setup .bunny { font-size: 64px; }
+  .setup p { color: var(--muted); }
+  .setup .btn-main { width: 100%; margin-top: 14px; padding: 16px; background: var(--accent); color: #fff; font-size: 20px; font-weight: 700; }
+
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+  .sheet { background: var(--bg); width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .sheet h3 { margin: 0 0 14px; font-size: 22px; }
+  .sheet label { display: block; color: var(--muted); font-size: 15px; margin: 12px 0 6px; }
+  .sheet .big { font-size: 32px; font-weight: 800; text-align: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chips button { background: #fff; border: 2px solid var(--line); padding: 6px 12px; font-size: 15px; }
+  .sheet .row { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 18px; }
+  .sheet .row button { padding: 16px; font-size: 19px; font-weight: 700; }
+  .btn-cancel { background: var(--line); color: var(--ink); }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 99px; font-size: 15px; z-index: 20; }
+  .offline { text-align: center; color: var(--muted); font-size: 14px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 首次設定 -->
+  <section id="setup" class="setup hidden">
+    <div class="bunny">🐰💰</div>
+    <h2 style="margin:8px 0 4px;color:var(--ink);font-size:24px">歡迎來到可愛零用錢</h2>
+    <p id="setupHint">先告訴我你是誰吧!</p>
+    <input id="nameInput" maxlength="20" placeholder="你的名字,例如:媽媽、Isa" autocomplete="off">
+    <button id="setupBtn" class="btn-main">開始記帳</button>
+    <p id="noCodeHint" class="hidden" style="font-size:14px;margin-top:18px">
+      如果家人已經建立帳本,請打開他們分享給你的連結,就能加入同一本帳。
+    </p>
+  </section>
+
+  <!-- 主畫面 -->
+  <section id="main" class="hidden">
+    <header>
+      <h1>🐰 可愛零用錢</h1>
+      <div>
+        <button id="shareBtn" class="link-btn">分享給家人</button>
+        <button id="whoBtn" class="who-chip"></button>
+      </div>
+    </header>
+
+    <div class="balance">
+      <div class="label">目前剩下</div>
+      <div id="balance" class="amount">$0</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-in" data-kind="in">➕ 收入</button>
+      <button class="btn-out" data-kind="out">➖ 花費</button>
+    </div>
+    <div id="offline" class="offline hidden">目前離線,記的帳會在連上網路後自動同步</div>
+
+    <h2>帳本</h2>
+    <div id="list" class="list"><div class="empty">讀取中…</div></div>
+  </section>
+
+  <section id="noConfig" class="setup hidden">
+    <div class="bunny">🔧</div>
+    <p>還沒設定 Firebase。請把 firebaseConfig 填進 index.html。</p>
+  </section>
+</div>
+
+<!-- 記一筆 -->
+<div id="sheet" class="sheet-bg hidden">
+  <form id="entryForm" class="sheet">
+    <h3 id="sheetTitle">記一筆</h3>
+    <label for="amountInput">金額</label>
+    <input id="amountInput" class="big" inputmode="numeric" pattern="[0-9]*" placeholder="0" autocomplete="off">
+    <label for="noteInput">做什麼用的?</label>
+    <input id="noteInput" maxlength="100" placeholder="例如:零用錢、買文具" autocomplete="off">
+    <div id="chips" class="chips"></div>
+    <div class="row">
+      <button type="button" class="btn-cancel" id="cancelBtn">取消</button>
+      <button type="submit" id="saveBtn" style="color:#fff">記下來</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module">
+// Firebase web config is public by design; access is guarded by the family code
+// (the ledger path) and the Firestore rules in firestore.rules.
+const FIREBASE_CONFIG = null;
+
+const SDK = "https://www.gstatic.com/firebasejs/11.0.2";
+const $ = (id) => document.getElementById(id);
+const LS_NAME = "wallet.name", LS_CODE = "wallet.code";
+const CHIPS = { in: ["零用錢", "紅包", "做家事獎勵", "存錢筒"], out: ["文具", "零食", "飲料", "玩具", "書"] };
+
+let fs, db, entriesRef;
+let entries = [];
+let sheetKind = "in";
+
+// ---------- family code & name ----------
+function takeJoinCode() {
+  const m = location.hash.match(/join=([A-Za-z0-9]{20,})/);
+  if (m) {
+    localStorage.setItem(LS_CODE, m[1]);
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+}
+function newCode() {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  return Array.from(bytes, (b) => abc[b % abc.length]).join("");
+}
+const getName = () => localStorage.getItem(LS_NAME);
+const getCode = () => localStorage.getItem(LS_CODE);
+
+// ---------- UI helpers ----------
+function show(id) {
+  for (const s of ["setup", "main", "noConfig"]) $(s).classList.toggle("hidden", s !== id);
+}
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.add("hidden"), 2200);
+}
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("zh-TW");
+const signed = (n) => (n > 0 ? "+" : "−") + Math.abs(n).toLocaleString("zh-TW");
+function when(d) {
+  if (!d) return "";
+  const today = new Date();
+  const hm = d.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false });
+  if (d.toDateString() === today.toDateString()) return "今天 " + hm;
+  return `${d.getMonth() + 1}/${d.getDate()} ${hm}`;
+}
+
+// ---------- render ----------
+function render() {
+  const total = entries.reduce((s, e) => s + e.amount, 0);
+  const bal = $("balance");
+  bal.textContent = money(total);
+  bal.classList.toggle("neg", total < 0);
+
+  const list = $("list");
+  if (!entries.length) {
+    list.innerHTML = `<div class="empty">還沒有任何紀錄,按上面的按鈕記第一筆吧!</div>`;
+    return;
+  }
+  const reversed = new Set(entries.filter((e) => e.reverses).map((e) => e.reverses));
+  let running = 0;
+  const rows = entries.map((e) => {
+    running += e.amount;
+    const isRev = reversed.has(e.id);
+    const tag = isRev ? `<span class="tag">已更正</span>` : e.reverses ? `<span class="tag">更正</span>` : "";
+    const fix = !isRev && !e.reverses ? ` · <button class="fix-btn" data-fix="${e.id}">記錯了</button>` : "";
+    return `<div class="item${isRev ? " reversed" : ""}">
+      <div class="note">${esc(e.note || (e.amount > 0 ? "收入" : "花費"))}${tag}</div>
+      <div class="money ${e.amount > 0 ? "in" : "out"}">${signed(e.amount)}</div>
+      <div class="meta">${esc(e.who)} · ${when(e.date)}${fix}</div>
+      <div class="after">剩 ${money(running)}</div>
+    </div>`;
+  });
+  list.innerHTML = rows.reverse().join("");
+}
+
+// ---------- data ----------
+async function startLedger() {
+  $("whoBtn").textContent = "我是 " + getName();
+  show("main");
+  const { collection, query, orderBy, onSnapshot } = fs;
+  entriesRef = collection(db, "ledgers", getCode(), "entries");
+  onSnapshot(query(entriesRef, orderBy("ts")), { includeMetadataChanges: true }, (snap) => {
+    entries = snap.docs.map((d) => {
+      const x = d.data({ serverTimestamps: "estimate" });
+      return { id: d.id, ...x, date: x.ts ? x.ts.toDate() : null };
+    });
+    $("offline").classList.toggle("hidden", !snap.metadata.hasPendingWrites || navigator.onLine);
+    render();
+  }, (err) => {
+    console.error(err);
+    $("list").innerHTML = `<div class="empty">讀不到帳本 😢<br><small>${esc(err.code || String(err))}</small></div>`;
+  });
+}
+
+function addEntry(amount, note, reverses) {
+  const { addDoc, setDoc, doc, serverTimestamp } = fs;
+  const data = { who: getName(), amount, note, ts: serverTimestamp() };
+  // Corrections use a fixed id so the rules (create-only) reject a second correction.
+  const p = reverses
+    ? setDoc(doc(entriesRef, "rev_" + reverses), { ...data, reverses })
+    : addDoc(entriesRef, data);
+  p.catch((err) => { console.error(err); toast("沒有記成功:" + (err.code || err.message)); });
+}
+
+// ---------- sheet ----------
+function openSheet(kind) {
+  sheetKind = kind;
+  $("sheetTitle").textContent = kind === "in" ? "➕ 收入" : "➖ 花費";
+  $("saveBtn").style.background = kind === "in" ? "var(--in)" : "var(--out)";
+  $("amountInput").value = "";
+  $("noteInput").value = "";
+  $("chips").innerHTML = CHIPS[kind].map((c) => `<button type="button">${c}</button>`).join("");
+  $("sheet").classList.remove("hidden");
+  setTimeout(() => $("amountInput").focus(), 50);
+}
+const closeSheet = () => $("sheet").classList.add("hidden");
+
+$("chips").addEventListener("click", (e) => {
+  if (e.target.tagName === "BUTTON") $("noteInput").value = e.target.textContent;
+});
+$("cancelBtn").onclick = closeSheet;
+$("sheet").addEventListener("click", (e) => { if (e.target.id === "sheet") closeSheet(); });
+$("entryForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const n = parseInt($("amountInput").value.replace(/[^\d]/g, ""), 10);
+  if (!n || n > 100000) { toast("請輸入 1 到 100,000 的金額"); return; }
+  const note = $("noteInput").value.trim();
+  addEntry(sheetKind === "in" ? n : -n, note);
+  closeSheet();
+  toast(sheetKind === "in" ? `記下收入 ${n} 元` : `記下花費 ${n} 元`);
+});
+document.querySelectorAll(".actions button").forEach((b) => (b.onclick = () => openSheet(b.dataset.kind)));
+
+$("list").addEventListener("click", (e) => {
+  const id = e.target.dataset && e.target.dataset.fix;
+  if (!id) return;
+  const orig = entries.find((x) => x.id === id);
+  if (!orig) return;
+  const label = orig.note || (orig.amount > 0 ? "收入" : "花費");
+  if (!confirm(`「${label} ${signed(orig.amount)}」記錯了嗎?\n\n帳本不能刪除,會補一筆相反的金額把它抵銷。`)) return;
+  addEntry(-orig.amount, ("更正:" + label).slice(0, 100), id);
+  toast("已補一筆更正");
+});
+
+// ---------- header ----------
+$("whoBtn").onclick = () => {
+  const n = prompt("要改成什麼名字?", getName());
+  if (n && n.trim()) {
+    localStorage.setItem(LS_NAME, n.trim().slice(0, 20));
+    $("whoBtn").textContent = "我是 " + getName();
+  }
+};
+$("shareBtn").onclick = async () => {
+  const url = location.origin + location.pathname + "#join=" + getCode();
+  const text = "一起來記零用錢吧!打開這個連結就能加入同一本帳:";
+  if (navigator.share) {
+    try { await navigator.share({ title: "可愛零用錢", text, url }); } catch {}
+  } else {
+    await navigator.clipboard.writeText(url);
+    toast("已複製加入連結,傳給家人吧!");
+  }
+};
+window.addEventListener("online", () => $("offline").classList.add("hidden"));
+
+// ---------- setup ----------
+$("setupBtn").onclick = () => {
+  const n = $("nameInput").value.trim();
+  if (!n) { $("nameInput").focus(); return; }
+  localStorage.setItem(LS_NAME, n.slice(0, 20));
+  if (!getCode()) localStorage.setItem(LS_CODE, newCode());
+  startLedger();
+};
+$("nameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("setupBtn").click(); });
+
+// ---------- boot ----------
+takeJoinCode();
+if (!FIREBASE_CONFIG) {
+  show("noConfig");
+} else {
+  const [{ initializeApp }, firestore] = await Promise.all([
+    import(`${SDK}/firebase-app.js`),
+    import(`${SDK}/firebase-firestore.js`),
+  ]);
+  fs = firestore;
+  db = fs.initializeFirestore(initializeApp(FIREBASE_CONFIG), {
+    localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
+  });
+  if (getName() && getCode()) {
+    startLedger();
+  } else {
+    show("setup");
+    if (getCode()) {
+      $("setupHint").textContent = "家人邀請你加入帳本!先告訴我你是誰吧。";
+    } else {
+      $("setupBtn").textContent = "建立新帳本";
+      $("noCodeHint").classList.remove("hidden");
+    }
+  }
+}
+</script>
+</body>
+</html>
