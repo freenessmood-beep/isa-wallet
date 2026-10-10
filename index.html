@@ -139,7 +139,14 @@
 <script type="module">
 // Firebase web config is public by design; access is guarded by the family code
 // (the ledger path) and the Firestore rules in firestore.rules.
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDr8Q6AhXBuAQOUhTlxMOqReHjsZyk-hlE",
+  authDomain: "wallet-8fbbe.firebaseapp.com",
+  projectId: "wallet-8fbbe",
+  storageBucket: "wallet-8fbbe.firebasestorage.app",
+  messagingSenderId: "507361826551",
+  appId: "1:507361826551:web:a63962fcba13573ea9e5f2",
+};
 
 const SDK = "https://www.gstatic.com/firebasejs/11.0.2";
 const $ = (id) => document.getElementById(id);
