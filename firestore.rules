@@ -22,9 +22,11 @@ service cloud.firestore {
     match /secrets/{code} {
       allow get: if code.size() >= 20;
       allow create, update: if code.size() >= 20
-        && request.resource.data.keys().hasOnly(['owner', 'pinHash', 'backupHash'])
+        && request.resource.data.keys().hasOnly(['owner', 'pinHash', 'backupHash', 'customCats'])
         && request.resource.data.owner is string && request.resource.data.owner.size() <= 20
-        && request.resource.data.pinHash is string && request.resource.data.backupHash is string;
+        && request.resource.data.pinHash is string && request.resource.data.backupHash is string
+        && (!('customCats' in request.resource.data)
+            || (request.resource.data.customCats is list && request.resource.data.customCats.size() <= 40));
       allow delete: if false;
 
       match /entries/{id} {
