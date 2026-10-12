@@ -16,5 +16,27 @@ service cloud.firestore {
       // A ledger never forgets: mistakes are fixed by adding a correcting entry.
       allow update, delete: if false;
     }
+
+    // Isa's secret ledger, one per family code. The PIN is checked in the page;
+    // entries here may be edited and deleted.
+    match /secrets/{code} {
+      allow get: if code.size() >= 20;
+      allow create, update: if code.size() >= 20
+        && request.resource.data.keys().hasOnly(['owner', 'pinHash', 'backupHash'])
+        && request.resource.data.owner is string && request.resource.data.owner.size() <= 20
+        && request.resource.data.pinHash is string && request.resource.data.backupHash is string;
+      allow delete: if false;
+
+      match /entries/{id} {
+        allow get, list, delete: if code.size() >= 20;
+        allow create, update: if code.size() >= 20
+          && request.resource.data.keys().hasOnly(['amount', 'cat', 'note', 'ts'])
+          && request.resource.data.amount is int && request.resource.data.amount != 0
+          && request.resource.data.amount >= -100000 && request.resource.data.amount <= 100000
+          && request.resource.data.cat is string && request.resource.data.cat.size() <= 20
+          && request.resource.data.note is string && request.resource.data.note.size() <= 100
+          && request.resource.data.ts is timestamp;
+      }
+    }
   }
 }
